@@ -1,60 +1,60 @@
 #!/bin/bash
 
-BIN_DIR=/usr/bin
-LOG_DIR=/var/log/telegraf
-SCRIPT_DIR=/usr/lib/telegraf/scripts
+BIN_DIR=/opt/bin
+LOG_DIR=/var/log/telegraf-nd
+SCRIPT_DIR=/opt/lib/telegraf-nd/scripts
 LOGROTATE_DIR=/etc/logrotate.d
 
 function install_init {
-    cp -f $SCRIPT_DIR/init.sh /etc/init.d/telegraf
-    chmod +x /etc/init.d/telegraf
+    cp -f $SCRIPT_DIR/init.sh /etc/init.d/telegraf-nd
+    chmod +x /etc/init.d/telegraf-nd
 }
 
 function install_systemd {
-    cp -f $SCRIPT_DIR/telegraf.service $1
-    systemctl enable telegraf || true
+    cp -f $SCRIPT_DIR/telegraf-nd.service $1
+    systemctl enable telegraf-nd || true
     systemctl daemon-reload || true
 }
 
 function install_update_rcd {
-    update-rc.d telegraf defaults
+    update-rc.d telegraf-nd defaults
 }
 
 function install_chkconfig {
-    chkconfig --add telegraf
+    chkconfig --add telegraf-nd
 }
 
 # Remove legacy symlink, if it exists
-if [[ -L /etc/init.d/telegraf ]]; then
-    rm -f /etc/init.d/telegraf
+if [[ -L /etc/init.d/telegraf-nd ]]; then
+    rm -f /etc/init.d/telegraf-nd
 fi
 # Remove legacy symlink, if it exists
-if [[ -L /etc/systemd/system/telegraf.service ]]; then
-    rm -f /etc/systemd/system/telegraf.service
+if [[ -L /etc/systemd/system/telegraf-nd.service ]]; then
+    rm -f /etc/systemd/system/telegraf-nd.service
 fi
 
 # Add defaults file, if it doesn't exist
-if [[ ! -f /etc/default/telegraf ]]; then
-    touch /etc/default/telegraf
+if [[ ! -f /etc/default/telegraf-nd ]]; then
+    touch /etc/default/telegraf-nd
 fi
 
 # Add .d configuration directory
-if [[ ! -d /etc/telegraf/telegraf.d ]]; then
-    mkdir -p /etc/telegraf/telegraf.d
+if [[ ! -d /etc/telegraf-nd/telegraf-nd.d ]]; then
+    mkdir -p /etc/telegraf-nd/telegraf-nd.d
 fi
 
-# If 'telegraf.conf' is not present use package's sample (fresh install)
-if [[ ! -f /etc/telegraf/telegraf.conf ]] && [[ -f /etc/telegraf/telegraf.conf.sample ]]; then
-   cp /etc/telegraf/telegraf.conf.sample /etc/telegraf/telegraf.conf
+# If 'telegraf-nd.conf' is not present use package's sample (fresh install)
+if [[ ! -f /etc/telegraf-nd/telegraf-nd.conf ]] && [[ -f /etc/telegraf-nd/telegraf-nd.conf.sample ]]; then
+   cp /etc/telegraf-nd/telegraf-nd.conf.sample /etc/telegraf-nd/telegraf-nd.conf
 fi
 
 test -d $LOG_DIR || mkdir -p $LOG_DIR
-chown -R -L telegraf:telegraf $LOG_DIR
+chown -R -L telegraf-nd:telegraf-nd $LOG_DIR
 chmod 755 $LOG_DIR
 
 if [[ "$(readlink /proc/1/exe)" == */systemd ]]; then
-	install_systemd /lib/systemd/system/telegraf.service
-	deb-systemd-invoke restart telegraf.service || echo "WARNING: systemd not running."
+	install_systemd /lib/systemd/system/telegraf-nd.service
+	deb-systemd-invoke restart telegraf-nd.service || echo "WARNING: systemd not running."
 else
 	# Assuming SysVinit
 	install_init
@@ -64,5 +64,5 @@ else
 	else
 		install_chkconfig
 	fi
-	invoke-rc.d telegraf restart
+	invoke-rc.d telegraf-nd restart
 fi

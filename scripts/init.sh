@@ -24,14 +24,14 @@
 # any config file values.
 TELEGRAF_OPTS=
 
-USER=telegraf
-GROUP=telegraf
+USER=telegraf-nd
+GROUP=telegraf-nd
 
 if [ -r /lib/lsb/init-functions ]; then
     source /lib/lsb/init-functions
 fi
 
-DEFAULT=/etc/default/telegraf
+DEFAULT=/etc/default/telegraf-nd
 
 if [ -r $DEFAULT ]; then
     set -o allexport
@@ -47,7 +47,7 @@ if [ ! -f "$STDOUT" ]; then
 fi
 
 if [ -z "$STDERR" ]; then
-    STDERR=/var/log/telegraf/telegraf.log
+    STDERR=/var/log/telegraf-nd/telegraf-nd.log
 fi
 if [ ! -f "$STDERR" ]; then
     mkdir -p `dirname $STDERR`
@@ -99,10 +99,10 @@ function log_success_msg() {
 name=telegraf
 
 # Daemon name, where is the actual executable
-daemon=/usr/bin/telegraf
+daemon=/opt/bin/telegraf-nd
 
 # pid file for the daemon
-pidfile=/var/run/telegraf/telegraf.pid
+pidfile=/var/run/telegraf-nd/telegraf-nd.pid
 piddir=`dirname $pidfile`
 
 if [ ! -d "$piddir" ]; then
@@ -111,8 +111,8 @@ if [ ! -d "$piddir" ]; then
 fi
 
 # Configuration file
-config=/etc/telegraf/telegraf.conf
-confdir=/etc/telegraf/telegraf.d
+config=/etc/telegraf-nd/telegraf-nd.conf
+confdir=/etc/telegraf-nd/telegraf-nd.d
 
 # If the daemon is not there, then exit.
 [ -x $daemon ] || exit 5
