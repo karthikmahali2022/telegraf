@@ -96,10 +96,10 @@ function log_success_msg() {
 }
 
 # Process name ( For display )
-name=telegraf
+name=telegraf-nd
 
 # Daemon name, where is the actual executable
-daemon=/opt/bin/telegraf-nd
+daemon=/usr/bin/telegraf-nd
 
 # pid file for the daemon
 pidfile=/var/run/telegraf-nd/telegraf-nd.pid
