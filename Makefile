@@ -45,7 +45,7 @@ MAKEFLAGS += --no-print-directory
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 HOSTGO := env -u GOOS -u GOARCH -u GOARM -- go
-INTERNAL_PKG=github.com/influxdata/telegraf/internal
+INTERNAL_PKG=github.com/karthikmahali2022/telegraf/internal
 LDFLAGS := $(LDFLAGS) -X $(INTERNAL_PKG).Commit=$(commit) -X $(INTERNAL_PKG).Branch=$(branch)
 ifneq ($(tag),)
 	LDFLAGS += -X $(INTERNAL_PKG).Version=$(version)
@@ -347,7 +347,7 @@ $(include_packages):
 			--input-type dir \
 			--output-type rpm \
 			--vendor InfluxData \
-			--url https://github.com/influxdata/telegraf \
+			--url https://github.com/karthikmahali2022/telegraf \
 			--license MIT \
 			--maintainer support@influxdb.com \
 			--config-files /etc/telegraf/telegraf.conf \
@@ -372,7 +372,7 @@ $(include_packages):
 			--input-type dir \
 			--output-type deb \
 			--vendor InfluxData \
-			--url https://github.com/influxdata/telegraf \
+			--url https://github.com/karthikmahali2022/telegraf \
 			--license MIT \
 			--maintainer support@influxdb.com \
 			--config-files /etc/telegraf-nd/telegraf-nd.conf.sample \
