@@ -4,7 +4,7 @@ if ! grep "^telegraf-nd:" /etc/group &>/dev/null; then
     groupadd -r telegraf-nd
 fi
 
-if ! id telegraf &>/dev/null; then
+if ! id telegraf-nd &>/dev/null; then
     useradd -r -M telegraf-nd -s /bin/false -d /etc/telegraf-nd -g telegraf-nd
 fi
 

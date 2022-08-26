@@ -1,8 +1,8 @@
 #!/bin/bash
 
-BIN_DIR=/opt/bin
+BIN_DIR=/usr/bin
 LOG_DIR=/var/log/telegraf-nd
-SCRIPT_DIR=/opt/lib/telegraf-nd/scripts
+SCRIPT_DIR=/usr/lib/telegraf-nd/scripts
 LOGROTATE_DIR=/etc/logrotate.d
 
 function install_init {
