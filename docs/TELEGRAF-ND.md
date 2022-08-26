@@ -117,7 +117,13 @@
            Package will be in telegraf(repo)/build/dist (filename will be like telegraf*.deb)
        
            Check how to run section above, to run in a VM.
-       
+          
+           Workaround: Build may fail in middle for a default script.Please do the below change and rerun the "make package ..."
+            cd (repo root folder)
+            mv  build/linux-amd64/telegraf build/linux-amd64/telegraf-nd
+
+
+           Warning to ignore : You may face syntax error: invalid arithmetic operator. But this is related to glibc version check. You can ignore for now.            This won't cause major harm to package
        
        
           
