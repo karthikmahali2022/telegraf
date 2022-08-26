@@ -45,7 +45,7 @@ MAKEFLAGS += --no-print-directory
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 HOSTGO := env -u GOOS -u GOARCH -u GOARM -- go
-INTERNAL_PKG=github.com/influxdata/telegraf/internal
+INTERNAL_PKG=github.com/karthikmahali2022/telegraf/internal
 LDFLAGS := $(LDFLAGS) -X $(INTERNAL_PKG).Commit=$(commit) -X $(INTERNAL_PKG).Branch=$(branch)
 ifneq ($(tag),)
 	LDFLAGS += -X $(INTERNAL_PKG).Version=$(version)
@@ -62,7 +62,7 @@ endif
 GOFILES ?= $(shell git ls-files '*.go')
 GOFMT ?= $(shell gofmt -l -s $(filter-out plugins/parsers/influx/machine.go, $(GOFILES)))
 
-prefix ?= /opt
+prefix ?= /usr
 bindir ?= $(prefix)/bin
 sysconfdir ?= $(prefix)/etc
 localstatedir ?= $(prefix)/var
@@ -458,7 +458,7 @@ windows_i386.zip windows_amd64.zip: export localstatedir = $(prefix)
 windows_i386.zip windows_amd64.zip: export EXEEXT := .exe
 
 %.deb: export pkg := deb
-%.deb: export prefix := /opt
+%.deb: export prefix := /usr
 %.deb: export conf_suffix := .sample
 %.deb: export sysconfdir := /etc
 %.deb: export localstatedir := /var
