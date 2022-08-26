@@ -117,7 +117,10 @@
            Package will be in telegraf(repo)/build/dist (filename will be like telegraf*.deb)
        
            Check how to run section above, to run in a VM.
-       
+          
+           Workaround: Build may fail in middle for a default script.Please do the below change and rerun the "make package ..."
+            cd (repo root folder)
+            mv  build/linux-amd64/telegraf build/linux-amd64/telegraf-nd
        
        
           
