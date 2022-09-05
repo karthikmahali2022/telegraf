@@ -14,9 +14,9 @@ import (
 
 	"github.com/influxdata/telegraf"
 	"github.com/influxdata/telegraf/internal"
-	"github.com/influxdata/telegraf/plugins/common/tls"
+	"github.com/influxdata/telegraf/internal/tls"
 	"github.com/influxdata/telegraf/plugins/outputs"
-	prometheus_client "github.com/influxdata/telegraf/plugins/outputs/prometheus_client/v1"
+	"github.com/influxdata/telegraf/plugins/outputs/prometheus_client"
 )
 
 func init() {
@@ -31,7 +31,6 @@ type PrometheusRemoteWrite struct {
 	BasicUsername        string `toml:"basic_username"`
 	BasicPassword        string `toml:"basic_password"`
 	RetryForClientErrors bool   `toml:"retry_for_client_errors"`
-	DropStringValues     bool   `toml:"drop_string_values"`
 	tls.ClientConfig
 
 	client http.Client
@@ -40,11 +39,9 @@ type PrometheusRemoteWrite struct {
 var sampleConfig = `
   ## URL to send Prometheus remote write requests to.
   url = "http://localhost/push"
-
   ## Optional HTTP asic auth credentials.
   # basic_username = "username"
   # basic_password = "pa55w0rd"
-
   ## Optional TLS Config for use on HTTP connections.
   # tls_ca = "/etc/telegraf/ca.pem"
   # tls_cert = "/etc/telegraf/cert.pem"
@@ -55,9 +52,6 @@ var sampleConfig = `
   # bearer_token = "bearer_token"
   ## Disable retry for 4XX http status codes
   # retry_for_client_errors = false
-
-  ## Drop fields with string value
-  # drop_string_values = false
 `
 
 func (p *PrometheusRemoteWrite) Connect() error {
@@ -91,9 +85,9 @@ func (p *PrometheusRemoteWrite) Write(metrics []telegraf.Metric) error {
 
 	for _, metric := range prometheus_client.Sorted(metrics) {
 		tags := metric.TagList()
-		commonLabels := make([]*prompb.Label, 0, len(tags))
+		commonLabels := make([]prompb.Label, 0, len(tags))
 		for _, tag := range tags {
-			commonLabels = append(commonLabels, &prompb.Label{
+			commonLabels = append(commonLabels, prompb.Label{
 				Name:  prometheus_client.Sanitize(tag.Key),
 				Value: tag.Value,
 			})
@@ -101,19 +95,17 @@ func (p *PrometheusRemoteWrite) Write(metrics []telegraf.Metric) error {
 
 		// Prometheus doesn't have a string value type, so convert string
 		// fields to labels if enabled.
-		if !p.DropStringValues {
-			for fn, fv := range metric.Fields() {
-				switch fv := fv.(type) {
-				case string:
-					tName := prometheus_client.Sanitize(fn)
-					if !prometheus_client.IsValidTagName(tName) {
-						continue
-					}
-					commonLabels = append(commonLabels, &prompb.Label{
-						Name:  tName,
-						Value: fv,
-					})
+		for fn, fv := range metric.Fields() {
+			switch fv := fv.(type) {
+			case string:
+				tName := prometheus_client.Sanitize(fn)
+				if !prometheus_client.IsValidTagName(tName) {
+					continue
 				}
+				commonLabels = append(commonLabels, prompb.Label{
+					Name:  tName,
+					Value: fv,
+				})
 			}
 		}
 
@@ -124,9 +116,9 @@ func (p *PrometheusRemoteWrite) Write(metrics []telegraf.Metric) error {
 			} else {
 				metricName = getSanitizedMetricName(metric.Name(), prometheus_client.Sanitize(field.Key))
 			}
-			labels := make([]*prompb.Label, len(commonLabels), len(commonLabels)+1)
+			labels := make([]prompb.Label, len(commonLabels), len(commonLabels)+1)
 			copy(labels, commonLabels)
-			labels = append(labels, &prompb.Label{
+			labels = append(labels, prompb.Label{
 				Name:  "__name__",
 				Value: metricName,
 			})
@@ -149,21 +141,21 @@ func (p *PrometheusRemoteWrite) Write(metrics []telegraf.Metric) error {
 			switch metric.Type() {
 			case telegraf.Histogram:
 				if field.Key != "sum" && field.Key != "count" {
-					labels = append(labels, &prompb.Label{
+					labels = append(labels, prompb.Label{
 						Name:  "le",
 						Value: field.Key,
 					})
 				}
 			case telegraf.Summary:
 				if field.Key != "sum" && field.Key != "count" {
-					labels = append(labels, &prompb.Label{
+					labels = append(labels, prompb.Label{
 						Name:  "quantile",
 						Value: field.Key,
 					})
 				}
 			}
 			ts := metric.Time().UnixNano() / int64(time.Millisecond)
-			req.Timeseries = append(req.Timeseries, &prompb.TimeSeries{
+			req.Timeseries = append(req.Timeseries, prompb.TimeSeries{
 				Labels: labels,
 				Samples: []prompb.Sample{{
 					Timestamp: ts,
@@ -224,7 +216,7 @@ func getSanitizedMetricName(name, field string) string {
 	return prometheus_client.Sanitize(fmt.Sprintf("%s_%s", name, field))
 }
 
-type byName []*prompb.Label
+type byName []prompb.Label
 
 func (a byName) Len() int           { return len(a) }
 func (a byName) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }

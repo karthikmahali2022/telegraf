@@ -25,6 +25,11 @@ import (
 	v2 "github.com/influxdata/telegraf/plugins/outputs/prometheus_client/v2"
 )
 
+var (
+	InvalidNameCharRE  = regexp.MustCompile(`[^a-zA-Z0-9_:]`)
+	ValidTagNameCharRE = regexp.MustCompile(`^[a-zA-Z_][a-zA-Z0-9_]*$`)
+)
+
 // DO NOT REMOVE THE NEXT TWO LINES! This is required to embed the sampleConfig data.
 //go:embed sample.conf
 var sampleConfig string

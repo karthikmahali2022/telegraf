@@ -433,3 +433,27 @@ func TestLandingPage(t *testing.T) {
 
 	require.Equal(t, expected, strings.TrimSpace(string(actual)))
 }
+
+func TestWrite_StringFieldsSpecialCharacter(t *testing.T) {
+	now := time.Now()
+	p1, err := metric.New(
+		"foo",
+		make(map[string]string),
+		map[string]interface{}{"value": 1.0, "status:colon": "good"},
+		now,
+		telegraf.Counter)
+	var metrics = []telegraf.Metric{p1}
+
+	client := &PrometheusClient{
+		ExpirationInterval: internal.Duration{Duration: time.Second * 60},
+		StringAsLabel:      true,
+		fam:                make(map[string]*MetricFamily),
+		now:                time.Now,
+	}
+	err = client.Write(metrics)
+	require.NoError(t, err)
+
+	fam, ok := client.fam["foo"]
+	require.True(t, ok)
+	require.Equal(t, 0, len(fam.LabelSet))
+}

@@ -47,8 +47,8 @@ func TestWrite(t *testing.T) {
 					map[string]interface{}{"blip": 0.0}, time.Unix(0, 0), telegraf.Counter),
 			},
 			expected: prompb.WriteRequest{
-				Timeseries: []*prompb.TimeSeries{{
-					Labels: []*prompb.Label{
+				Timeseries: []prompb.TimeSeries{{
+					Labels: []prompb.Label{
 						{Name: "__name__", Value: "foo_blip"},
 						{Name: "bar", Value: "baz"},
 					},
@@ -86,14 +86,14 @@ func TestWrite(t *testing.T) {
 
 func TestWrite_WithStringField(t *testing.T) {
 	for i, tc := range []struct {
-		metrics          []telegraf.Metric
-		expected         prompb.WriteRequest
-		dropStringValues bool
+		metrics  []telegraf.Metric
+		expected prompb.WriteRequest
 	}{
 		{
 			metrics:  []telegraf.Metric{},
 			expected: prompb.WriteRequest{},
 		},
+
 		{
 			metrics: []telegraf.Metric{
 				mustNew(t,
@@ -108,8 +108,8 @@ func TestWrite_WithStringField(t *testing.T) {
 				),
 			},
 			expected: prompb.WriteRequest{
-				Timeseries: []*prompb.TimeSeries{{
-					Labels: []*prompb.Label{
+				Timeseries: []prompb.TimeSeries{{
+					Labels: []prompb.Label{
 						{Name: "__name__", Value: "foo_num"},
 						{Name: "bar", Value: "baz"},
 						{Name: "blip", Value: "blop"},
@@ -119,32 +119,6 @@ func TestWrite_WithStringField(t *testing.T) {
 					},
 				}},
 			},
-		},
-		{
-			metrics: []telegraf.Metric{
-				mustNew(t,
-					"foo",
-					map[string]string{"bar": "baz"},
-					map[string]interface{}{
-						"blip": "blop",
-						"num":  1,
-					},
-					time.Unix(0, 0),
-					telegraf.Counter,
-				),
-			},
-			expected: prompb.WriteRequest{
-				Timeseries: []*prompb.TimeSeries{{
-					Labels: []*prompb.Label{
-						{Name: "__name__", Value: "foo_num"},
-						{Name: "bar", Value: "baz"},
-					},
-					Samples: []prompb.Sample{
-						{Timestamp: 0, Value: 1},
-					},
-				}},
-			},
-			dropStringValues: true,
 		},
 	} {
 		t.Run(strconv.Itoa(i), func(t *testing.T) {
@@ -163,8 +137,7 @@ func TestWrite_WithStringField(t *testing.T) {
 			defer server.Close()
 
 			remote := PrometheusRemoteWrite{
-				URL:              server.URL,
-				DropStringValues: tc.dropStringValues,
+				URL: server.URL,
 			}
 			err := remote.Write(tc.metrics)
 			require.NoError(t, err)
@@ -197,8 +170,8 @@ func TestWrite_WithStringFieldDotAsSpecialCharacter(t *testing.T) {
 				),
 			},
 			expected: prompb.WriteRequest{
-				Timeseries: []*prompb.TimeSeries{{
-					Labels: []*prompb.Label{
+				Timeseries: []prompb.TimeSeries{{
+					Labels: []prompb.Label{
 						{Name: "__name__", Value: "foo_num"},
 						{Name: "bar", Value: "baz"},
 						{Name: "blip_dot", Value: "blop"},
@@ -259,8 +232,8 @@ func TestWrite_WithStringFieldColonAsSpecialCharacter(t *testing.T) {
 				),
 			},
 			expected: prompb.WriteRequest{
-				Timeseries: []*prompb.TimeSeries{{
-					Labels: []*prompb.Label{
+				Timeseries: []prompb.TimeSeries{{
+					Labels: []prompb.Label{
 						{Name: "__name__", Value: "foo_num"},
 						{Name: "bar", Value: "baz"},
 					},
@@ -291,13 +264,7 @@ func TestWrite_WithStringFieldColonAsSpecialCharacter(t *testing.T) {
 			}
 			err := remote.Write(tc.metrics)
 			require.NoError(t, err)
-
-			assert.Len(t, actual.Timeseries, len(tc.expected.Timeseries))
-			for _, ts := range actual.Timeseries {
-				actualLabels := ts.Labels
-				expectedLabels := ts.Labels
-				assert.Equal(t, expectedLabels, actualLabels)
-			}
+			assert.Equal(t, actual, tc.expected)
 		})
 	}
 }
@@ -367,8 +334,8 @@ func TestWriteWithHistogram(t *testing.T) {
 					map[string]interface{}{"99": 1.0}, time.Unix(0, 0), telegraf.Histogram),
 			},
 			expected: prompb.WriteRequest{
-				Timeseries: []*prompb.TimeSeries{{
-					Labels: []*prompb.Label{
+				Timeseries: []prompb.TimeSeries{{
+					Labels: []prompb.Label{
 						{Name: "__name__", Value: "foo"},
 						{Name: "bar", Value: "baz"},
 						{Name: "le", Value: "99"},
@@ -421,8 +388,8 @@ func TestWriteWithSummary(t *testing.T) {
 					map[string]interface{}{"99": 1.0}, time.Unix(0, 0), telegraf.Summary),
 			},
 			expected: prompb.WriteRequest{
-				Timeseries: []*prompb.TimeSeries{{
-					Labels: []*prompb.Label{
+				Timeseries: []prompb.TimeSeries{{
+					Labels: []prompb.Label{
 						{Name: "__name__", Value: "foo"},
 						{Name: "bar", Value: "baz"},
 						{Name: "quantile", Value: "99"},
