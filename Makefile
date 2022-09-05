@@ -254,7 +254,7 @@ install: $(buildbin)
 	@if [ $(GOOS) != "windows" ]; then mkdir -pv $(DESTDIR)$(localstatedir)/log/telegraf-nd; fi
 	@if [ $(GOOS) != "windows" ]; then mkdir -pv $(DESTDIR)$(sysconfdir)/telegraf-nd/telegraf-nd.d; fi
 	@cp -fv $(buildbin) $(DESTDIR)$(bindir)
-	@if [ $(GOOS) != "windows" ]; then cp -fv etc/telegraf-nd.conf $(DESTDIR)$(sysconfdir)/telegraf-nd/telegraf-nd.conf$(conf_suffix); fi
+	@if [ $(GOOS) != "windows" ]; then cp -fv etc/telegraf-nd/telegraf-nd.conf $(DESTDIR)$(sysconfdir)/telegraf-nd/telegraf-nd.conf$(conf_suffix); fi
 	@if [ $(GOOS) != "windows" ]; then cp -fv etc/logrotate.d/telegraf-nd $(DESTDIR)$(sysconfdir)/logrotate.d; fi
 	@if [ $(GOOS) = "windows" ]; then cp -fv etc/telegraf_windows.conf $(DESTDIR)/telegraf.conf; fi
 	@if [ $(GOOS) = "linux" ]; then scripts/check-dynamic-glibc-versions.sh $(buildbin) $(glibc_version); fi
@@ -375,8 +375,8 @@ $(include_packages):
 			--url https://github.com/karthikmahali2022/telegraf \
 			--license MIT \
 			--maintainer support@influxdb.com \
-			--config-files /etc/telegraf-nd/telegraf-nd.conf.sample \
-			--config-files /etc/logrotate.d/telegraf-nd \
+			--config-files etc/telegraf-nd/telegraf-nd.conf.sample \
+			--config-files etc/logrotate.d/telegraf-nd \
 			--after-install scripts/deb/post-install.sh \
 			--before-install scripts/deb/pre-install.sh \
 			--after-remove scripts/deb/post-remove.sh \
