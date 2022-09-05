@@ -20,7 +20,7 @@ else ifeq ($(tag),)
 	version := $(next_version)
 	rpm_version := $(version)~$(commit)-0
 	rpm_iteration := 0
-	deb_version := $(version)~$(commit)-0
+	deb_version := $(version)-$(commit)-0
 	deb_iteration := 0
 	tar_version := $(version)~$(commit)
 else ifneq ($(findstring -rc,$(tag)),)
@@ -29,7 +29,7 @@ else ifneq ($(findstring -rc,$(tag)),)
 	rc := $(word 2,$(subst -, ,$(tag)))
 	rpm_version := $(version)-0.$(rc)
 	rpm_iteration := 0.$(subst rc,,$(rc))
-	deb_version := $(version)~$(rc)-1
+	deb_version := $(version)-$(rc)-1
 	deb_iteration := 0
 	tar_version := $(version)~$(rc)
 else
@@ -45,7 +45,7 @@ MAKEFLAGS += --no-print-directory
 GOOS ?= $(shell go env GOOS)
 GOARCH ?= $(shell go env GOARCH)
 HOSTGO := env -u GOOS -u GOARCH -u GOARM -- go
-INTERNAL_PKG=github.com/influxdata/telegraf/internal
+INTERNAL_PKG=github.com/karthikmahali2022/telegraf/internal
 LDFLAGS := $(LDFLAGS) -X $(INTERNAL_PKG).Commit=$(commit) -X $(INTERNAL_PKG).Branch=$(branch)
 ifneq ($(tag),)
 	LDFLAGS += -X $(INTERNAL_PKG).Version=$(version)
@@ -62,7 +62,7 @@ endif
 GOFILES ?= $(shell git ls-files '*.go')
 GOFMT ?= $(shell gofmt -l -s $(filter-out plugins/parsers/influx/machine.go, $(GOFILES)))
 
-prefix ?= /usr/local
+prefix ?= /usr
 bindir ?= $(prefix)/bin
 sysconfdir ?= $(prefix)/etc
 localstatedir ?= $(prefix)/var
@@ -251,16 +251,16 @@ install: $(buildbin)
 	@mkdir -pv $(DESTDIR)$(sysconfdir)
 	@mkdir -pv $(DESTDIR)$(localstatedir)
 	@if [ $(GOOS) != "windows" ]; then mkdir -pv $(DESTDIR)$(sysconfdir)/logrotate.d; fi
-	@if [ $(GOOS) != "windows" ]; then mkdir -pv $(DESTDIR)$(localstatedir)/log/telegraf; fi
-	@if [ $(GOOS) != "windows" ]; then mkdir -pv $(DESTDIR)$(sysconfdir)/telegraf/telegraf.d; fi
+	@if [ $(GOOS) != "windows" ]; then mkdir -pv $(DESTDIR)$(localstatedir)/log/telegraf-nd; fi
+	@if [ $(GOOS) != "windows" ]; then mkdir -pv $(DESTDIR)$(sysconfdir)/telegraf-nd/telegraf-nd.d; fi
 	@cp -fv $(buildbin) $(DESTDIR)$(bindir)
-	@if [ $(GOOS) != "windows" ]; then cp -fv etc/telegraf.conf $(DESTDIR)$(sysconfdir)/telegraf/telegraf.conf$(conf_suffix); fi
-	@if [ $(GOOS) != "windows" ]; then cp -fv etc/logrotate.d/telegraf $(DESTDIR)$(sysconfdir)/logrotate.d; fi
+	@if [ $(GOOS) != "windows" ]; then cp -fv etc/telegraf-nd.conf $(DESTDIR)$(sysconfdir)/telegraf-nd/telegraf-nd.conf$(conf_suffix); fi
+	@if [ $(GOOS) != "windows" ]; then cp -fv etc/logrotate.d/telegraf-nd $(DESTDIR)$(sysconfdir)/logrotate.d; fi
 	@if [ $(GOOS) = "windows" ]; then cp -fv etc/telegraf_windows.conf $(DESTDIR)/telegraf.conf; fi
 	@if [ $(GOOS) = "linux" ]; then scripts/check-dynamic-glibc-versions.sh $(buildbin) $(glibc_version); fi
-	@if [ $(GOOS) = "linux" ]; then mkdir -pv $(DESTDIR)$(prefix)/lib/telegraf/scripts; fi
-	@if [ $(GOOS) = "linux" ]; then cp -fv scripts/telegraf.service $(DESTDIR)$(prefix)/lib/telegraf/scripts; fi
-	@if [ $(GOOS) = "linux" ]; then cp -fv scripts/init.sh $(DESTDIR)$(prefix)/lib/telegraf/scripts; fi
+	@if [ $(GOOS) = "linux" ]; then mkdir -pv $(DESTDIR)$(prefix)/lib/telegraf-nd/scripts; fi
+	@if [ $(GOOS) = "linux" ]; then cp -fv scripts/telegraf-nd.service $(DESTDIR)$(prefix)/lib/telegraf-nd/scripts; fi
+	@if [ $(GOOS) = "linux" ]; then cp -fv scripts/init.sh $(DESTDIR)$(prefix)/lib/telegraf-nd/scripts; fi
 
 # Telegraf build per platform.  This improves package performance by sharing
 # the bin between deb/rpm/tar packages over building directly into the package
@@ -347,7 +347,7 @@ $(include_packages):
 			--input-type dir \
 			--output-type rpm \
 			--vendor InfluxData \
-			--url https://github.com/influxdata/telegraf \
+			--url https://github.com/karthikmahali2022/telegraf \
 			--license MIT \
 			--maintainer support@influxdb.com \
 			--config-files /etc/telegraf/telegraf.conf \
@@ -372,21 +372,21 @@ $(include_packages):
 			--input-type dir \
 			--output-type deb \
 			--vendor InfluxData \
-			--url https://github.com/influxdata/telegraf \
+			--url https://github.com/karthikmahali2022/telegraf \
 			--license MIT \
 			--maintainer support@influxdb.com \
-			--config-files /etc/telegraf/telegraf.conf.sample \
-			--config-files /etc/logrotate.d/telegraf \
+			--config-files /etc/telegraf-nd/telegraf-nd.conf.sample \
+			--config-files /etc/logrotate.d/telegraf-nd \
 			--after-install scripts/deb/post-install.sh \
 			--before-install scripts/deb/pre-install.sh \
 			--after-remove scripts/deb/post-remove.sh \
 			--before-remove scripts/deb/pre-remove.sh \
 			--description "Plugin-driven server agent for reporting metrics into InfluxDB." \
-			--name telegraf \
+			--name telegraf-nd \
 			--version $(version) \
 			--iteration $(deb_iteration) \
 			--chdir $(DESTDIR) \
-			--package $(pkgdir)/telegraf_$(deb_version)_$@	;\
+			--package $(pkgdir)/telegraf-nd_$(deb_version)_$@	;\
 	elif [ "$(suffix $@)" = ".zip" ]; then \
 		(cd $(dir $(DESTDIR)) && zip -r - ./*) > $(pkgdir)/telegraf-$(tar_version)_$@ ;\
 	elif [ "$(suffix $@)" = ".gz" ]; then \
@@ -473,6 +473,6 @@ windows_i386.zip windows_amd64.zip: export EXEEXT := .exe
 %.zip: export pkg := zip
 %.zip: export prefix := /
 
-%.deb %.rpm %.tar.gz %.zip: export DESTDIR = build/$(GOOS)-$(GOARCH)$(GOARM)$(cgo)-$(pkg)/telegraf-$(version)
-%.deb %.rpm %.tar.gz %.zip: export buildbin = build/$(GOOS)-$(GOARCH)$(GOARM)$(cgo)/telegraf$(EXEEXT)
+%.deb %.rpm %.tar.gz %.zip: export DESTDIR = build/$(GOOS)-$(GOARCH)$(GOARM)$(cgo)-$(pkg)/telegraf-nd-$(version)
+%.deb %.rpm %.tar.gz %.zip: export buildbin = build/$(GOOS)-$(GOARCH)$(GOARM)$(cgo)/telegraf-nd$(EXEEXT)
 %.deb %.rpm %.tar.gz %.zip: export LDFLAGS = -w -s
