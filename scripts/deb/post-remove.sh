@@ -1,26 +1,26 @@
 #!/bin/bash
 
 function disable_systemd {
-    systemctl disable telegraf
+    systemctl disable telegraf-nd
     rm -f $1
 }
 
 function disable_update_rcd {
-    update-rc.d -f telegraf remove
-    rm -f /etc/init.d/telegraf
+    update-rc.d -f telegraf-nd remove
+    rm -f /etc/init.d/telegraf-nd
 }
 
 function disable_chkconfig {
-    chkconfig --del telegraf
-    rm -f /etc/init.d/telegraf
+    chkconfig --del telegraf-nd
+    rm -f /etc/init.d/telegraf-nd
 }
 
 if [ "$1" == "remove" -o "$1" == "purge" ]; then
 	# Remove/purge
-	rm -f /etc/default/telegraf
+	rm -f /etc/default/telegraf-nd
 
 	if [[ "$(readlink /proc/1/exe)" == */systemd ]]; then
-		disable_systemd /lib/systemd/system/telegraf.service
+		disable_systemd /lib/systemd/system/telegraf-nd.service
 	else
 		# Assuming sysv
 		# Run update-rc.d or fallback to chkconfig if not available
