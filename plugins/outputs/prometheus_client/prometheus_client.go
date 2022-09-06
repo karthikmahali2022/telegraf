@@ -3,6 +3,7 @@ package prometheus_client
 
 import (
 	"context"
+	"crypto/subtle"
 	"crypto/tls"
 	_ "embed"
 	"fmt"
@@ -11,7 +12,13 @@ import (
 	"net/url"
 	"sync"
 	"time"
-	"regexp"
+	"regexp"	
+	"log"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
