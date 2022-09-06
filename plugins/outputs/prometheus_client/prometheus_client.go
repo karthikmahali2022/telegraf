@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"sync"
 	"time"
+	"regexp"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
@@ -221,8 +222,187 @@ func (p *PrometheusClient) Close() error {
 	return err
 }
 
+// func (p *PrometheusClient) Write(metrics []telegraf.Metric) error {
+// 	return p.collector.Add(metrics)
+// }
 func (p *PrometheusClient) Write(metrics []telegraf.Metric) error {
-	return p.collector.Add(metrics)
+	p.Lock()
+	defer p.Unlock()
+
+	now := p.now()
+
+	for _, point := range Sorted(metrics) {
+		tags := point.Tags()
+		sampleID := CreateSampleID(tags)
+
+		labels := make(map[string]string)
+		for k, v := range tags {
+			tName := Sanitize(k)
+			if !IsValidTagName(tName) {
+				continue
+			}
+			labels[tName] = v
+		}
+
+		// Prometheus doesn't have a string value type, so convert string
+		// fields to labels if enabled.
+		if p.StringAsLabel {
+			for fn, fv := range point.Fields() {
+				switch fv := fv.(type) {
+				case string:
+					tName := Sanitize(fn)
+					if !IsValidTagName(tName) {
+						continue
+					}
+					labels[tName] = fv
+				}
+			}
+		}
+
+		switch point.Type() {
+		case telegraf.Summary:
+			var mname string
+			var sum float64
+			var count uint64
+			summaryvalue := make(map[float64]float64)
+			for fn, fv := range point.Fields() {
+				var value float64
+				switch fv := fv.(type) {
+				case int64:
+					value = float64(fv)
+				case uint64:
+					value = float64(fv)
+				case float64:
+					value = fv
+				default:
+					continue
+				}
+
+				switch fn {
+				case "sum":
+					sum = value
+				case "count":
+					count = uint64(value)
+				default:
+					limit, err := strconv.ParseFloat(fn, 64)
+					if err == nil {
+						summaryvalue[limit] = value
+					}
+				}
+			}
+			sample := &Sample{
+				Labels:       labels,
+				SummaryValue: summaryvalue,
+				Count:        count,
+				Sum:          sum,
+				Timestamp:    point.Time(),
+				Expiration:   now.Add(p.ExpirationInterval.Duration),
+			}
+			mname = Sanitize(point.Name())
+
+			if !IsValidTagName(mname) {
+				continue
+			}
+
+			p.addMetricFamily(point, sample, mname, sampleID)
+
+		case telegraf.Histogram:
+			var mname string
+			var sum float64
+			var count uint64
+			histogramvalue := make(map[float64]uint64)
+			for fn, fv := range point.Fields() {
+				var value float64
+				switch fv := fv.(type) {
+				case int64:
+					value = float64(fv)
+				case uint64:
+					value = float64(fv)
+				case float64:
+					value = fv
+				default:
+					continue
+				}
+
+				switch fn {
+				case "sum":
+					sum = value
+				case "count":
+					count = uint64(value)
+				default:
+					limit, err := strconv.ParseFloat(fn, 64)
+					if err == nil {
+						histogramvalue[limit] = uint64(value)
+					}
+				}
+			}
+			sample := &Sample{
+				Labels:         labels,
+				HistogramValue: histogramvalue,
+				Count:          count,
+				Sum:            sum,
+				Timestamp:      point.Time(),
+				Expiration:     now.Add(p.ExpirationInterval.Duration),
+			}
+			mname = Sanitize(point.Name())
+
+			if !IsValidTagName(mname) {
+				continue
+			}
+
+			p.addMetricFamily(point, sample, mname, sampleID)
+
+		default:
+			for fn, fv := range point.Fields() {
+				// Ignore string and bool fields.
+				var value float64
+				switch fv := fv.(type) {
+				case int64:
+					value = float64(fv)
+				case uint64:
+					value = float64(fv)
+				case float64:
+					value = fv
+				default:
+					continue
+				}
+
+				sample := &Sample{
+					Labels:     labels,
+					Value:      value,
+					Timestamp:  point.Time(),
+					Expiration: now.Add(p.ExpirationInterval.Duration),
+				}
+
+				// Special handling of value field; supports passthrough from
+				// the prometheus input.
+				var mname string
+				switch point.Type() {
+				case telegraf.Counter:
+					if fn == "counter" {
+						mname = Sanitize(point.Name())
+					}
+				case telegraf.Gauge:
+					if fn == "gauge" {
+						mname = Sanitize(point.Name())
+					}
+				}
+				if mname == "" {
+					if fn == "value" {
+						mname = Sanitize(point.Name())
+					} else {
+						mname = Sanitize(fmt.Sprintf("%s_%s", point.Name(), fn))
+					}
+				}
+				if !IsValidTagName(mname) {
+					continue
+				}
+				p.addMetricFamily(point, sample, mname, sampleID)
+
+			}
+		}
+	}
+	return nil
 }
 
 func init() {
@@ -234,4 +414,26 @@ func init() {
 			StringAsLabel:      true,
 		}
 	})
+}
+
+func Sanitize(value string) string {
+	return InvalidNameCharRE.ReplaceAllString(value, "_")
+}
+
+func IsValidTagName(tag string) bool {
+	return ValidTagNameCharRE.MatchString(tag)
+}
+
+// Sorted returns a copy of the metrics in time ascending order.  A copy is
+// made to avoid modifying the input metric slice since doing so is not
+// allowed.
+func Sorted(metrics []telegraf.Metric) []telegraf.Metric {
+	batch := make([]telegraf.Metric, 0, len(metrics))
+	for i := len(metrics) - 1; i >= 0; i-- {
+		batch = append(batch, metrics[i])
+	}
+	sort.Slice(batch, func(i, j int) bool {
+		return batch[i].Time().Before(batch[j].Time())
+	})
+	return batch
 }
